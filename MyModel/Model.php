@@ -49,7 +49,9 @@ class Model implements \ArrayAccess, \IteratorAggregate
     protected int $limit_start    = 0;
     protected int $limit_end      = 0;
     protected int $offset         = 0;
-    protected string $sort_order  = '';
+
+    /** @var array<string, string> */
+    protected $sort_order  = [];
 
     // magic ----------------------
 
@@ -180,7 +182,7 @@ class Model implements \ArrayAccess, \IteratorAggregate
     public function getter(string $key, $default = null)
     {
         if (array_key_exists($key, $this->stash)) {
-            throw new \Exception("Cant read this colum `{$key}`");
+            throw new \Exception("Cant read this column `{$key}`.");
         }
 
         return $this->first()[$key] ?? $default;
@@ -413,7 +415,7 @@ class Model implements \ArrayAccess, \IteratorAggregate
         foreach (array_keys($this->columns) as $key) {
             if (!array_key_exists($column, $this->columns[$key])
             || !array_key_exists($column, $this->fresh[$key])) {
-                throw new \Exception("Column `{$column}` is not in table `{$this->table_name}`");
+                throw new \Exception("Column {$column} is not in table `{$this->table_name}`.");
             }
 
             if (false === ($this->columns[$key][$column] === $this->fresh[$key][$column])) {
@@ -543,14 +545,14 @@ class Model implements \ArrayAccess, \IteratorAggregate
     /**
      * Set sort column and order
      * column name must register.
-     *
-     * @return static
      */
-    public function order(string $column_name, int $order_using = MyQuery::ORDER_ASC, ?string $belong_to = null)
+    public function order(string $column_name, int $order_using = MyQuery::ORDER_ASC, ?string $belong_to = null): self
     {
         $order = 0 === $order_using ? 'ASC' : 'DESC';
         $belong_to ??= $this->table_name;
-        $this->sort_order = "ORDER BY `$belong_to`.`$column_name` $order";
+        $res = "{$belong_to}.{$column_name}";
+
+        $this->sort_order[$res] = $order;
 
         return $this;
     }

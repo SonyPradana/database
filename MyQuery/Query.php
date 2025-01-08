@@ -17,13 +17,16 @@ abstract class Query
     /** @var string Table Name */
     protected $_table = '';
 
+    protected ?InnerQuery $_sub_query = null;
+
     /** @var string[] Columns name */
     protected $_column = ['*'];
 
     /**
      * Binder array(['key', 'val']).
      *
-     * @var Bind[] Binder for PDO bind */
+     * @var Bind[] Binder for PDO bind
+     */
     protected $_binds = [];
 
     /** @var int Limit start from */
@@ -35,8 +38,8 @@ abstract class Query
     /** @var int offest */
     protected $_offset = 0;
 
-    /** @var string Sort result ASC|DESC */
-    protected $_sort_order  = '';
+    /** @var array<string, string> Sort result ASC|DESC */
+    protected array $_sort_order  = [];
 
     public const ORDER_ASC  = 0;
     public const ORDER_DESC = 1;
@@ -51,9 +54,9 @@ abstract class Query
     /**
      * Grouping.
      *
-     * @var string|null
+     * @var string[]
      */
-    protected $_group_by;
+    protected $_group_by = [];
 
     /**
      * Multy filter with strict mode.
@@ -89,6 +92,7 @@ abstract class Query
     public function reset()
     {
         $this->_table         = '';
+        $this->_sub_query     = null;
         $this->_column        = ['*'];
         $this->_binds         = [];
         $this->_limit_start   = 0;
@@ -172,13 +176,16 @@ abstract class Query
      */
     protected function splitFilters(array $filters): string
     {
-        // mengconvert array ke string query
-        $query = [];
+        $query      = [];
+        $table_name = null === $this->_sub_query ? $this->_table : $this->_sub_query->getAlias();
         foreach ($filters['filters'] as $fieldName => $fieldValue) {
             $value        = $fieldValue['value'];
             $comparation  = $fieldValue['comparation'];
+            $column       = str_contains($fieldName, '.') ? $fieldName : "{$table_name}.{$fieldName}";
+            $bind         = $fieldValue['bind'];
+
             if ($value !== '') {
-                $query[] = "($this->_table.$fieldName $comparation :$fieldName)";
+                $query[] = "({$column} {$comparation} :{$bind})";
             }
         }
 
